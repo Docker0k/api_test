@@ -29,6 +29,7 @@ class TaskController extends Controller
         $response = [];
         foreach ($tasks as $task) {
             $response[$task->category_id][] = [
+                "id" => $task->id,
                 'name' => $task->name,
                 'description' => $task->description,
                 'created_at' => $task->created_at,
@@ -47,12 +48,27 @@ class TaskController extends Controller
     public function store(Request $request): JsonResponse
     {
         try {
-            Task::create($request->all());
+            if(!$request->has('user_id')){
+                $request->merge(['user_id' => Auth::id()]);
+            }
+            if($request->user_id !== Auth::id()){
+                if(Auth::user()->hasRole('user')){
+                    $request->merge(['user_id' => Auth::id()]);
+                }
+            }
+            $task = Task::create($request->all());
         } catch (Exception $e) {
-            response()->json(['Task not created. Has error: ', $e->getMessage()], 400);
+            return response()->json(['Task not created. Has error: ', $e->getMessage()], 400);
         }
 
-        return response()->json();
+        return response()->json([
+                "id" => $task->id,
+                'name' => $task->name,
+                'description' => $task->description,
+                'created_at' => $task->created_at,
+                'status' => $task->getStatus(),
+                'category' => $task->category->name
+        ]);
     }
 
     /**
@@ -82,7 +98,7 @@ class TaskController extends Controller
         try {
             $task->update($request->all());
         } catch (Exception $e) {
-            response()->json(['Task cannot be updated. Request return error: ' . $e->getMessage()], 400);
+            return response()->json(['Task cannot be updated. Request return error: ' . $e->getMessage()], 400);
         }
         return response()->json(['Task successfully updated']);
     }
@@ -95,7 +111,7 @@ class TaskController extends Controller
         try {
             $task->delete();
         } catch (Exception $e) {
-            response()->json(['Task cannot be deleted. Request return error: ' . $e->getMessage()], 400);
+            return response()->json(['Task cannot be deleted. Request return error: ' . $e->getMessage()], 400);
         }
         return response()->json(['Task has been deleted']);
     }

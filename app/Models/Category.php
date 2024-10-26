@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $user_id
  * @property string $name
  * @property string $type
+ * @property bool $can_modify
  *
  * @see Category::user()
  * @property-read User $user
@@ -26,6 +27,7 @@ class Category extends Model
         'user_id',
         'name',
         'type',
+        'can_modify',
     ];
 
 

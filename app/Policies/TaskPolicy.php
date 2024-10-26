@@ -13,7 +13,7 @@ class TaskPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('admin|user');
     }
 
     /**
@@ -29,7 +29,7 @@ class TaskPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('admin|user');
     }
 
     /**

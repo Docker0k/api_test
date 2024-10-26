@@ -7,6 +7,7 @@ use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class CategoryController extends Controller
 {
@@ -20,10 +21,18 @@ class CategoryController extends Controller
      */
     public function index(): JsonResponse
     {
-        $categories = Category::all();
+        /** @var Category[] $categories */
+        if (Auth::user()->hasRole('admin')){
+            $categories = Category::all();
+        } else {
+            $categories = Category::query()
+                ->where('user_id', Auth::user()->id)
+                ->get();
+        }
         $response = [];
         foreach ($categories as $category) {
             $response[] = [
+                'category_id' => $category->id,
                 'user_id' => $category->user_id,
                 'email' => $category->user->email,
                 'name' => $category->name,
@@ -58,12 +67,18 @@ class CategoryController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        try {
-            Category::create($request->all());
-        } catch (Exception $e) {
-            response()->json(['Category not created. Has error: ' . $e->getMessage()], 400);
-        }
 
+        try {
+            $arr = [
+                'name' => $request->name,
+                'type' => $request->type ?? '',
+                'user_id' => Auth::id()
+            ];
+            Category::create($arr);
+
+        } catch (Exception $e) {
+            return response()->json(['Category not created. Has error: ' . $e->getMessage()], 400);
+        }
         return response()->json(['Category created.']);
     }
 
@@ -75,10 +90,15 @@ class CategoryController extends Controller
      */
     public function update(Category $category, Request $request): JsonResponse
     {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'type' => 'string|max:255',
+        ]);
+
         try {
             $category->update($request->all());
         } catch (Exception $e) {
-            response()->json(['Category cannot be updated. Request return error: ' . $e->getMessage()], 400);
+            return response()->json(['Category cannot be updated. Request return error: ' . $e->getMessage()], 400);
         }
 
         return response()->json(['Category has been updated']);
@@ -94,7 +114,7 @@ class CategoryController extends Controller
         try {
             $category->delete();
         } catch (Exception $e) {
-            response()->json(['Category cannot be deleted. Request return error: ' . $e->getMessage()], 400);
+            return response()->json(['Category cannot be deleted. Request return error: ' . $e->getMessage()], 400);
         }
         return response()->json(['Category has been deleted']);
     }

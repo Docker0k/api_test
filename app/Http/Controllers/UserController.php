@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
@@ -24,7 +25,42 @@ class UserController extends Controller
      */
     public function index()
     {
-        return response()->json(User::all()->toArray());
+        $users = User::all();
+        $response = [];
+        foreach ($users as $user) {
+            $total = 0;
+            $arr = [
+                'email' => $user->email,
+            ];
+            foreach ($user->categories as $category) {
+                if (!$category->tasks->count()) {
+                    continue;
+                }
+                $total += $category->tasks->count();
+            }
+            $arr['total_tasks'] = $total;
+            $response[] = $arr;
+        }
+        return response()->json($response);
+    }
+
+    public function show(User $user)
+    {
+        $total = 0;
+        $arr = [
+            'email' => $user->email,
+        ];
+        foreach ($user->categories as $category) {
+            $arr['categories'][] = [
+                'name' => $category->name,
+                'count_tasks' => $category->tasks->count()
+            ];
+            $total += $category->tasks->count();
+        }
+        $arr['total_tasks'] = $total;
+        $response[] = $arr;
+
+        return response()->json($response);
     }
 
 
@@ -55,5 +91,30 @@ class UserController extends Controller
     {
         User::find($id)->delete();
         return response()->json(['User has been deleted']);
+    }
+
+    /**
+     * @param Request $request
+     * @param User $user
+     * @return JsonResponse
+     * @throws ValidationException
+     */
+    public function update(Request $request, User $user): JsonResponse
+    {
+        $request->validate([
+            'role' => 'string',
+            'name' => 'string'
+        ]);
+        try {
+            $user->update($request->all());
+            if($request->has('role')){
+                $user->roles()->detach();
+                $user->assignRole($request->role);
+            }
+        }catch (Exception $e){
+            return response()->json(['Error: ' . $e]);
+        }
+
+        return response()->json(['Success change user data']);
     }
 }

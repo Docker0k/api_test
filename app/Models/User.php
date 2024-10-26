@@ -9,6 +9,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
@@ -19,6 +20,9 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon $email_verified_at
  * @property Carbon $created_at
  * @property Carbon $updated_at
+ *
+ * @see User::categories()
+ * @property-read Category[] $categories
  */
 class User extends Authenticatable implements JWTSubject
 {
@@ -69,8 +73,16 @@ class User extends Authenticatable implements JWTSubject
     public function getJWTCustomClaims(): array
     {
         return [
-            'email'=>$this->email,
-            'name'=>$this->name
+            'email' => $this->email,
+            'name' => $this->name
         ];
+    }
+
+    /**
+     * @return HasMany
+     */
+    public function categories(): HasMany
+    {
+        return $this->hasMany(Category::class);
     }
 }

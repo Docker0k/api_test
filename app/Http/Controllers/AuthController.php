@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -31,6 +32,13 @@ class AuthController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+        ]);
+
+        $user->assignRole('user ');
+        Category::create([
+            'user_id'=> $user->id,
+            'name' => 'Urgent tasks',
+            'can_modify' => false
         ]);
 
         $token = Auth::guard('api')->login($user);
